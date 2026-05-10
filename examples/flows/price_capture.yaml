@@ -1,0 +1,13 @@
+name: price_capture
+description: Land on a public page and record 10 seconds of network traffic. Replace the URL with a real target before running in anger.
+profile:
+  headless: true
+  geoip: true
+steps:
+  - action: navigate
+    args:
+      url: https://www.gnu.org/software/
+  - action: capture_har
+    name: record-network
+    args:
+      duration_seconds: 10

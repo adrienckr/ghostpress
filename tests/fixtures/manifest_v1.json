@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "name": "shop.example.com",
+  "source_url": "https://shop.example.com/",
+  "capture_time": "2026-05-09T12:00:00Z",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  "endpoints": [
+    {
+      "method": "GET",
+      "url_template": "https://api.shop.example.com/v1/products",
+      "response_content_type": "application/json",
+      "request_count": 3,
+      "sample": {
+        "status": 200,
+        "request_headers": {
+          "accept": "application/json",
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+        },
+        "request_body_preview": null,
+        "response_headers": {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "public, max-age=60"
+        },
+        "response_body_preview": "{\"items\":[{\"id\":42,\"name\":\"Hex Wrench\",\"price\":1299},{\"id\":43,\"name\":\"Allen Key Set\",\"price\":2499}],\"page\":1,\"total\":2}",
+        "response_size_bytes": 118
+      }
+    },
+    {
+      "method": "GET",
+      "url_template": "https://api.shop.example.com/v1/products/{id}",
+      "response_content_type": "application/json",
+      "request_count": 2,
+      "sample": {
+        "status": 200,
+        "request_headers": {
+          "accept": "application/json"
+        },
+        "request_body_preview": null,
+        "response_headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "response_body_preview": "{\"id\":42,\"name\":\"Hex Wrench\",\"price\":1299,\"stock\":17,\"category\":\"tools\"}",
+        "response_size_bytes": 71
+      }
+    },
+    {
+      "method": "GET",
+      "url_template": "https://api.shop.example.com/v1/orders/{uuid}",
+      "response_content_type": "application/json",
+      "request_count": 1,
+      "sample": {
+        "status": 200,
+        "request_headers": {
+          "accept": "application/json",
+          "authorization": "Bearer redacted-token"
+        },
+        "request_body_preview": null,
+        "response_headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "response_body_preview": "{\"id\":\"3f1a2c8e-4b5d-4f6a-8e9b-1c2d3e4f5a6b\",\"status\":\"shipped\",\"total\":3998}",
+        "response_size_bytes": 75
+      }
+    },
+    {
+      "method": "POST",
+      "url_template": "https://api.shop.example.com/v1/cart",
+      "response_content_type": "application/json",
+      "request_count": 1,
+      "sample": {
+        "status": 201,
+        "request_headers": {
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "request_body_preview": "{\"product_id\":42,\"quantity\":2}",
+        "response_headers": {
+          "content-type": "application/json; charset=utf-8",
+          "location": "/v1/cart/abc123"
+        },
+        "response_body_preview": "{\"cart_id\":\"abc123\",\"items\":[{\"product_id\":42,\"quantity\":2,\"price\":1299}],\"subtotal\":2598}",
+        "response_size_bytes": 91
+      }
+    }
+  ],
+  "notes": "Golden fixture for printing-press manifest v1; do not edit without bumping schema."
+}

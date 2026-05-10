@@ -1,0 +1,28 @@
+name: form_submit
+description: Fill the httpbin demo form, submit it, and capture the rendered response.
+profile:
+  headless: true
+steps:
+  - action: navigate
+    args:
+      url: https://httpbin.org/forms/post
+  - action: fill
+    args:
+      selector: input[name=custname]
+      text: Anonymous
+  - action: fill
+    args:
+      selector: input[name=custtel]
+      text: "555-0100"
+  - action: fill
+    args:
+      selector: input[name=custemail]
+      text: anon@example.com
+  - action: click
+    args:
+      selector: button[type=submit]
+  - action: read_page
+    name: response-body
+  - action: screenshot
+    args:
+      full_page: true

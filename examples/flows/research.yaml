@@ -1,0 +1,32 @@
+name: research
+description: Visit three public pages, capture markdown digests, and one screenshot.
+profile:
+  headless: true
+  geoip: true
+steps:
+  - action: navigate
+    name: open-hn
+    args:
+      url: https://news.ycombinator.com
+      wait_for: ".titleline"
+  - action: read_page
+    name: digest-hn
+  - action: screenshot
+    name: snap-hn
+    args:
+      full_page: false
+  - action: navigate
+    name: open-example
+    args:
+      url: https://example.com
+  - action: read_page
+    name: digest-example
+  - action: wait
+    args:
+      seconds: 1
+  - action: navigate
+    name: open-httpbin
+    args:
+      url: https://httpbin.org/get
+  - action: read_page
+    name: digest-httpbin

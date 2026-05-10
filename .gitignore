@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+wheels/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# ghostpress runtime
+runs/
+captures/
+*.har
+!tests/fixtures/**/*.har
+
+# Camoufox cache (per-user)
+.camoufox/
+
+# Local secrets / .env
+.env
+.env.*
+!.env.example
