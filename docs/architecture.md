@@ -169,10 +169,6 @@ We intentionally do not share sessions across MCP clients. Two reasons:
 If you want concurrent captures, run multiple `ghostpress sniff` processes.
 Each gets its own registry and its own camoufox instance.
 
-The default `--parallel 1` (and the absence of intra-process parallelism)
-matches the recommendation in [RESPONSIBLE_USE.md](../RESPONSIBLE_USE.md):
-sniffing is meant to be deliberate, not throughput-maximised.
-
 ## Why camoufox
 
 Standard Playwright Chromium bots are detectable through a long list of
@@ -241,8 +237,7 @@ Things that exist as v0.2 candidates but did not ship in v0.1:
   coordinated through a shared queue, with output merged into a single
   manifest.
 - **Captcha solver hooks.** A pluggable interface that hands an
-  interactive challenge off to an external solver. Out of scope for v0.1
-  by design — see [RESPONSIBLE_USE.md](../RESPONSIBLE_USE.md).
+  interactive challenge off to an external solver. Out of scope for v0.1.
 - **Residential proxy pool.** First-class integration with rotating
   residential proxies, including health checks and locality awareness.
 - **Alpha camoufox track.** v0.1 pins `camoufox[geoip] >=0.4.0,<0.5.0`.

@@ -51,7 +51,7 @@ Inside `./capture` you will find:
 
 If the target serves a Cloudflare or hCaptcha challenge during the window,
 ghostpress detects it and reports a warning line. It does not attempt to
-solve the challenge — see [RESPONSIBLE_USE.md](../RESPONSIBLE_USE.md).
+solve the challenge in v0.1; supply your own solver hook in v0.2.
 
 ## Use it with printing-press
 
@@ -133,8 +133,7 @@ gives clearer error output than the embedded launch path.
 **captcha detected.** ghostpress reports the signal it saw (`hcaptcha`,
 `recaptcha`, `turnstile`, `cloudflare`) and writes whatever HAR it managed to
 capture before the wall. ghostpress does not attempt to solve interactive
-challenges. See [RESPONSIBLE_USE.md](../RESPONSIBLE_USE.md) for the project's
-position on bypassing access controls.
+challenges in v0.1; bring your own solver in v0.2.
 
 **zero endpoints in the manifest.** The HAR → manifest converter only keeps
 JSON and form-encoded responses. If the target serves only HTML and static
@@ -153,5 +152,3 @@ browser instances), or a proxy URL the upstream cannot reach.
   that shape the public surface.
 - [manifest format](manifest_format.md) — the manifest schema and the rules
   the converter applies.
-- [RESPONSIBLE_USE.md](../RESPONSIBLE_USE.md) — what ghostpress is and is not
-  meant to be used for.

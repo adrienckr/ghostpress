@@ -56,7 +56,3 @@ jq -r '.log.entries[] | "\(.request.method) \(.request.url)"' \
 jq '.log.entries[] | select(.request.method == "POST") | .request.postData' \
   ./capture/har.json
 ```
-
----
-
-See [responsible use](../RESPONSIBLE_USE.md) before pointing this at anything you do not own.

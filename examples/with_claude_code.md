@@ -66,7 +66,3 @@ For a printing-press handoff in one shot:
 > source_url="https://httpbin.org/get". Save the manifest JSON to ./httpbin.json.
 
 The agent will pipe the HAR returned from `stealth_capture_har` straight into `stealth_export_manifest`, which emits a printing-press v4-compatible manifest (`schema_version: 1`).
-
----
-
-See [responsible use](../RESPONSIBLE_USE.md) before pointing this at anything you do not own.

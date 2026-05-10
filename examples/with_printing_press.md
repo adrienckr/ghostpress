@@ -69,7 +69,3 @@ The window stays open for the full duration; sign in, click through whatever the
 ## Why this works
 
 camoufox ships with anti-fingerprinting patches that make Firefox's TLS handshake, navigator surface, and font enumeration match a regular browser rather than a stock Playwright build. Most bot-protection vendors gate on those signals first, so the page renders and the real API calls leave the browser intact. The HAR ghostpress writes is a faithful record of those calls — printing-press treats it as ground truth and never has to negotiate the protection layer itself.
-
----
-
-See [responsible use](../RESPONSIBLE_USE.md) before pointing this at anything you do not own.

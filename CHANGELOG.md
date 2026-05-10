@@ -19,7 +19,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   YAML.
 - Integration recipe with printing-press: `printing-press --har <ghostpress
   output> --name X` works against bot-protected sites.
-- `RESPONSIBLE_USE.md` enumerating intended-use scope.
 
 ### Pinned
 

@@ -136,19 +136,6 @@ pyright src/
 
 Integration tests (real browser, real network) are gated behind the `integration` pytest marker and skipped by default. Run them with `pytest -m integration` once `python -m camoufox fetch` has completed.
 
-## Responsible use
-
-`ghostpress` provides a stealth-browser surface that bypasses passive fingerprinting. That capability is dual-use: it makes legitimate automation against modern JavaScript-heavy sites possible, and it can also be misused. Please read [RESPONSIBLE_USE.md](RESPONSIBLE_USE.md) before pointing this at anything you do not own.
-
-The maintainers do not support and will not assist with:
-
-- Account creation farms, fake-review fleets, or other deceptive content generation against third-party platforms.
-- Bypassing access controls, paywalls, or rate limits in violation of a site's terms of service.
-- Aggregating personal data without a lawful basis under the applicable privacy regime (GDPR, CCPA, and equivalents).
-- Activity that interferes with the normal operation of a service (resource exhaustion, denial of service).
-
-By using `ghostpress` you accept sole responsibility for compliance with the laws of your jurisdiction and the terms of any service you interact with.
-
 ## Roadmap (v0.2+)
 
 - Distributed sniff: shard a target list across worker processes with a shared output bucket.
