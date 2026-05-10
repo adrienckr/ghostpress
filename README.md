@@ -1,93 +1,64 @@
 # ghostpress
 
-Stealth-browser sniff daemon for printing-press — capture APIs from bot-protected sites.
+**URL → CLI in 60 seconds.** Stealth-browser sniff + codegen — works on Amazon, Cloudflare, anything else.
 
 [![ci](https://github.com/adrienckr/ghostpress/actions/workflows/ci.yml/badge.svg)](https://github.com/adrienckr/ghostpress/actions/workflows/ci.yml)
 [![pypi](https://img.shields.io/pypi/v/ghostpress.svg)](https://pypi.org/project/ghostpress/)
 [![python](https://img.shields.io/pypi/pyversions/ghostpress.svg)](https://pypi.org/project/ghostpress/)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[printing-press](https://github.com/mvanhorn/cli-printing-press) takes a HAR file and synthesises a typed CLI plus an MCP server for any HTTP API. It works beautifully against open APIs, but its built-in capture path is plain HTTP — anything sitting behind Cloudflare, Akamai, PerimeterX, hCaptcha, Turnstile, or a single-page app that fingerprints navigator/canvas/WebGL is invisible to it. The HAR comes back full of static assets and the generated CLI is empty.
+## The pitch
 
-`ghostpress` fills that gap. It drives [camoufox](https://github.com/daijro/camoufox) — a hardened Firefox fork with anti-fingerprinting patches — against the target, records the network conversation, and emits a HAR plus a printing-press v4 manifest that printing-press consumes verbatim. The same surface is exposed over MCP so Claude Code, Cursor, or any other MCP client can drive a stealth browser as a first-class tool.
+There are great codegen tools for the "URL or HAR -> typed CLI" job. [printing-press](https://printingpress.dev) is the best of them — it turns an API spec or a HAR file into a Go CLI, an MCP server, and a Claude Code skill, with a SQLite mirror and agent-native compound commands. It is the bar to clear. But every tool in this category dies on the same wall: bot detection. Amazon. Cloudflare-walled SaaS dashboards. JS-heavy SPAs that fingerprint navigator, canvas, WebGL, and TLS before they let a single XHR through. The capture step is where the dream breaks. The HAR comes back full of static assets and the generated CLI is empty.
 
-## What you can do
+`ghostpress` drops [camoufox](https://github.com/daijro/camoufox) — a C++-patched stealth Firefox build with anti-fingerprinting baked in — into the capture step. Same paradigm: sniff -> manifest -> CLI. Same MCP-friendly output. The wall is gone.
 
-- Capture HARs from sites that gate on TLS, navigator, canvas, WebGL, or font fingerprinting.
-- Hand the HAR to `printing-press` and get a generated typed CLI and MCP server for the target.
-- Drive a stealth browser from Claude Code (or any MCP client) through 9 tools.
-- Script multi-step flows (login, click-through, then sniff) declaratively in YAML.
-
-## Install
+## What you get
 
 ```bash
 pip install ghostpress
 python -m camoufox fetch
+ghostpress build https://www.amazon.com/product-reviews/<ASIN>
+# 60s later:
+out/amazon-com/cli.py reviews
+out/amazon-com/mcp.py     # also an MCP server
+out/amazon-com/skill.md   # also a Claude Code skill
 ```
 
-`python -m camoufox fetch` downloads the patched Firefox build (~250 MB) into camoufox's cache. Running it explicitly avoids surprising download stalls on the first sniff.
+What `ghostpress build` actually does:
 
-## Quickstart
+- Launches a stealth Firefox session (camoufox).
+- Captures every API call the page makes during the observation window.
+- Converts the capture into a printing-press v4-compatible manifest.
+- Generates a standalone Typer CLI, an MCP server, and a Claude Code skill.
+- Drops everything in `out/<name>/` with a per-CLI README.
 
-### 1. Sniff a HAR
+## Prompt mode
+
+You don't have to know the URL. Describe what you want and let Claude pick.
 
 ```bash
-ghostpress sniff https://news.ycombinator.com --out ./capture --duration 10
+export ANTHROPIC_API_KEY=...
+ghostpress build --prompt "I want a CLI for the Hacker News API"
+# -> Claude proposes URLs, you confirm, build runs end-to-end.
 ```
-
-Expected output:
-
-```
-sniff complete
-  HAR:        ./capture/har.json
-  Manifest:   ./capture/manifest.json
-  Endpoints:  4
-```
-
-### 2. Use it with printing-press
-
-```bash
-printing-press --har ./capture/har.json --name HN
-```
-
-`printing-press` reads the HAR, validates `schema_version=1` on the manifest, and generates `HN-pp-cli` plus `HN-pp-mcp` in the current directory.
-
-### 3. Register as an MCP server in Claude Code
-
-```bash
-claude mcp add ghostpress -- ghostpress mcp
-```
-
-The `mcp` subcommand starts an stdio MCP server with all 9 stealth tools. A single `SessionRegistry` lives for the connection's lifetime, so a session opened in one tool call survives across the next call from the same client.
 
 ## CLI reference
 
-`ghostpress` exposes three subcommands.
+| Command | Purpose |
+| --- | --- |
+| `ghostpress build <url>` | URL -> CLI in 60 seconds. The headline command. Sniffs, generates, writes everything to `out/<name>/`. |
+| `ghostpress build --prompt "..."` | Natural-language description; ghostpress picks the URL via Claude Opus 4.7. |
+| `ghostpress sniff <url>` | One-shot stealth capture. Writes `har.json` + `manifest.json` to `--out`. No codegen. |
+| `ghostpress mcp` | Start the MCP server on stdio. Used as the launch command in `claude mcp add` / Cursor / any stdio MCP client. |
+| `ghostpress run <flow.yaml>` | Execute a multi-step browser flow declared in YAML (login, click, then sniff). |
+| `ghostpress gallery` | List bundled example CLIs from `examples/gallery/`. |
 
-### `ghostpress sniff <url>`
-
-| Flag | Default | Purpose |
-| --- | --- | --- |
-| `--out`, `-o` | `./capture` | Output directory (created if missing). |
-| `--duration`, `-d` | `30.0` | Seconds to observe the page after `domcontentloaded`. |
-| `--name`, `-n` | host of URL | Manifest `name` field. |
-| `--headed` | `False` | Run with a visible browser window. |
-| `--proxy` | none | Proxy URL (`scheme://user:pass@host:port`). |
-| `--interact` | `False` | Keep the window open for operator clicks during the capture window. |
-
-### `ghostpress mcp`
-
-Starts the MCP server on stdio. No flags. Used as the launch command in `claude mcp add` / Cursor MCP config / any stdio MCP client.
-
-### `ghostpress run <flow.yaml>`
-
-| Flag | Default | Purpose |
-| --- | --- | --- |
-| `--out`, `-o` | `./runs` | Output directory for run evidence (per-step JSON artifacts). |
-
-Each step in the flow writes a JSON artifact under `<out>/runs/<run-id>/<NN>_<action>.json` so every execution is auditable.
+Common flags on `build` and `sniff`: `--out`, `--duration`, `--name`, `--headed`, `--proxy`. Build adds `--prompt`, `--keep-secrets`, and `--formats` (default `python_cli,mcp_server,claude_skill,readme`). Sniff adds `--interact` for operator-driven captures.
 
 ## MCP tools
+
+The `ghostpress mcp` server exposes nine stealth-browser tools, useful as a power-user surface even when you're not running a build.
 
 | Tool | Description |
 | --- | --- |
@@ -101,26 +72,45 @@ Each step in the flow writes a JSON artifact under `<out>/runs/<run-id>/<NN>_<ac
 | `stealth_capture_har` | Capture network events for a duration and return a HAR. |
 | `stealth_export_manifest` | Convert a HAR JSON string into a printing-press manifest. |
 
-Schemas live in [`ghostpress.mcp_server._TOOL_DEFS`](src/ghostpress/mcp_server.py).
+A single `SessionRegistry` lives for the connection's lifetime, so a session opened in one tool call survives across the next call from the same client.
 
 ## Architecture
 
-`ghostpress` is a thin async core. Both the CLI and the MCP server delegate to the same tool functions, which in turn share a `SessionRegistry` that owns the underlying camoufox processes.
-
 ```
-  ghostpress sniff ──┐
-  ghostpress run ────┼──► SessionRegistry ──► camoufox (Firefox + anti-fp) ──► target
-  ghostpress mcp ────┘                                │
-                                                       └─► HAR ──► Manifest (printing-press v4)
+URL ──► camoufox session ──► HAR ──► Manifest ──► CodegenSpec ──┬─► Python CLI (Typer + httpx)
+                                                                ├─► MCP server (stdio)
+                                                                ├─► Claude Code skill
+                                                                └─► per-CLI README
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the module map and design decisions.
+The `CodegenSpec` is a pure deterministic projection of the manifest — see [docs/codegen_format.md](docs/codegen_format.md) for the contract and snapshot-test guarantees.
 
-## Examples
+## vs printing-press
 
-- [docs/quickstart.md](docs/quickstart.md) — first sniff, common flags, and troubleshooting.
-- [examples/with_printing_press.md](examples/with_printing_press.md) — end-to-end recipe pairing ghostpress with printing-press, including the `--headed --interact` flow for sites behind interactive logins.
-- [examples/flows/](examples/flows/) — sample YAML flows you can hand to `ghostpress run`.
+| | printing-press | ghostpress |
+| --- | --- | --- |
+| Source | OpenAPI spec, URL, HAR file | URL, prompt, HAR file |
+| Capture | plain HTTP | stealth Firefox (camoufox) |
+| Bot-protected sites | empty CLI | works |
+| Output language | Go | Python (Typer) |
+| Caching layer | local SQLite mirror | none (v1.0) |
+| Pre-built gallery | 60+ community CLIs | small starter set |
+
+ghostpress and printing-press are not in conflict — `ghostpress sniff` writes a printing-press v4 manifest, so you can use ghostpress purely as the capture front-end if you prefer printing-press's Go output and SQLite caching. Long version: [docs/positioning.md](docs/positioning.md).
+
+## Examples gallery
+
+Pre-built CLIs you can run without doing your own capture: [examples/gallery/](examples/gallery/). Coming soon — Hacker News, GitHub public, httpbin. In the meantime, [examples/flows/](examples/flows/) has runnable YAML flows for `ghostpress run`.
+
+## Limits
+
+The honesty section.
+
+- Generated CLIs are good defaults, not production-ready clients. Auth flows beyond cookie replay (OAuth, signed requests) need manual edits.
+- Pagination needs operator hints. The generator will not infer cursor structures from a single sample.
+- Rate limiting is the operator's responsibility. Don't point the generated CLI at someone else's infrastructure and run a tight loop.
+- Captcha walls are detected and surfaced (`captcha_detected: true` in the build result), not solved. ghostpress will not bundle a bypass.
+- `--keep-secrets` replays the captured `Authorization` / `Cookie` / `X-Api-Key` headers verbatim into the generated code. Off by default for a reason.
 
 ## Development
 
@@ -136,12 +126,13 @@ pyright src/
 
 Integration tests (real browser, real network) are gated behind the `integration` pytest marker and skipped by default. Run them with `pytest -m integration` once `python -m camoufox fetch` has completed.
 
-## Roadmap (v0.2+)
+## Roadmap (v1.1+)
 
 - Distributed sniff: shard a target list across worker processes with a shared output bucket.
 - Captcha solver hooks: pluggable resolver interface (operator-supplied, no bundled bypass).
 - Residential proxy pool: round-robin selection with sticky sessions per target.
-- Alpha camoufox track: optional pin against `0.5.x` for early access to upstream fingerprint patches.
+- Web playground: paste a URL in a browser, get a downloadable CLI.
+- OAuth flow generation: detect login redirects in the capture and emit a working token-refresh path.
 
 ## License
 

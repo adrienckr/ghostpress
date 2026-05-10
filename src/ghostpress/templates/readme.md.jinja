@@ -1,0 +1,35 @@
+# {{ spec.name }}
+
+Generated CLI + MCP server + Claude Code skill for **{{ spec.source_url }}**.
+
+Built by [ghostpress](https://github.com/adrienckr/ghostpress) -- captured the live API surface with a stealth browser, generated this artifact in seconds.
+
+## Install
+
+```bash
+pip install -e .
+```
+
+## Use it
+
+{% for cmd in spec.commands %}
+### `{{ cmd.name }}`
+
+{{ cmd.description }}
+
+```bash
+{{ spec.package_slug }} {{ cmd.name }}{% for p in cmd.path_params %} <{{ p }}>{% endfor %}{% for q in cmd.query_params %} --{{ q }} <value>{% endfor %}
+```
+
+`{{ cmd.method }} {{ cmd.url_template }}`
+{% endfor %}
+
+## MCP server
+
+```bash
+claude mcp add {{ spec.package_slug }} -- python mcp.py
+```
+
+## Claude Code skill
+
+Drop `skill.md` in `~/.claude/skills/{{ spec.package_slug }}/skill.md`.

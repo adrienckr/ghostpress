@@ -255,11 +255,90 @@ class Flow(BaseModel):
     steps: list[FlowStep]
 
 
+# ---------------------------------------------------------------------------
+# Codegen
+# ---------------------------------------------------------------------------
+
+
+class GeneratedCommand(BaseModel):
+    """A single Typer/MCP command generated from one Endpoint."""
+
+    name: str  # e.g. "users-get"
+    method: str
+    url_template: str
+    path_params: list[str] = Field(default_factory=list)  # ordered Typer args
+    query_params: dict[str, str] = Field(default_factory=dict)  # name -> default
+    body_fields: dict[str, str] = Field(default_factory=dict)  # name -> default
+    body_is_raw: bool = False
+    headers: dict[str, str] = Field(default_factory=dict)  # replayed (no secrets)
+    description: str = ""
+
+
+class CodegenSpec(BaseModel):
+    """Inputs to every codegen module — derived once from a Manifest, reused."""
+
+    name: str  # CLI name, e.g. "amazon-reviews"
+    package_slug: str  # import-safe slug, e.g. "amazon_reviews"
+    source_url: str
+    base_url: str  # scheme://host (no path)
+    user_agent: str | None = None
+    keep_secrets: bool = False
+    commands: list[GeneratedCommand]
+    schema_version: int = 1
+
+
+class GeneratedArtifact(BaseModel):
+    """One file emitted by a codegen module."""
+
+    path: str  # relative to the build out_dir
+    content: str
+    executable: bool = False
+
+
+class BuildOptions(BaseModel):
+    url: str
+    out_dir: str
+    name: str | None = None  # CLI name; defaults to derived slug
+    duration_seconds: float = 30.0
+    profile: BrowserProfile = Field(default_factory=BrowserProfile)
+    proxy: ProxyConfig | None = None
+    keep_secrets: bool = False
+    formats: list[str] = Field(
+        default_factory=lambda: ["python_cli", "mcp_server", "claude_skill", "readme"]
+    )
+    interact: bool = False
+
+
+class BuildResult(BaseModel):
+    out_dir: str
+    har_path: str
+    manifest_path: str
+    artifacts: list[str] = Field(default_factory=list)  # relative paths written
+    command_count: int = 0
+    captcha_detected: bool = False
+    captcha_signal: str | None = None
+    elapsed_seconds: float = 0.0
+
+
+class PromptCandidate(BaseModel):
+    url: str
+    why: str
+    expected_endpoints: list[str] = Field(default_factory=list)
+
+
+class PromptSuggestion(BaseModel):
+    prompt: str
+    candidates: list[PromptCandidate]
+
+
 __all__ = [
     "HAR",
     "BrowserProfile",
+    "BuildOptions",
+    "BuildResult",
     "CaptureHarResult",
     "ClickResult",
+    "CodegenSpec",
     "Endpoint",
     "EndpointSample",
     "ExportManifestResult",
@@ -267,6 +346,8 @@ __all__ = [
     "Flow",
     "FlowAction",
     "FlowStep",
+    "GeneratedArtifact",
+    "GeneratedCommand",
     "HAREntry",
     "HARLog",
     "HARRequest",
@@ -274,6 +355,8 @@ __all__ = [
     "JsonDict",
     "Manifest",
     "NavigateResult",
+    "PromptCandidate",
+    "PromptSuggestion",
     "ProxyConfig",
     "ReadPageResult",
     "ScreenshotResult",

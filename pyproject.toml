@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ghostpress"
-version = "0.1.0"
-description = "Stealth-browser sniff daemon for printing-press — capture APIs from bot-protected sites."
+version = "1.0.0"
+description = "URL → CLI in 60 seconds. Stealth-browser sniff + codegen — works on Amazon, Cloudflare, anything else."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -39,6 +39,8 @@ dependencies = [
     "rich>=13.7.0",
     "pyyaml>=6.0",
     "playwright>=1.40.0",
+    "jinja2>=3.1.0",
+    "anthropic>=0.40.0",
 ]
 
 [project.optional-dependencies]
@@ -60,6 +62,9 @@ Issues = "https://github.com/adrienckr/ghostpress/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ghostpress"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/ghostpress/templates" = "ghostpress/templates"
 
 [tool.ruff]
 line-length = 100
@@ -84,10 +89,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["B011", "N802", "RUF012"]
+"tests/**" = ["B011", "N802", "RUF012", "ASYNC240"]
 "src/ghostpress/_types.py" = ["N815"]   # HAR 1.2 spec uses camelCase field names
 "src/ghostpress/sniff.py" = ["ASYNC240"]   # Path.mkdir before browser launch is fine
 "src/ghostpress/tools.py" = ["RUF006"]     # fire-and-forget event-handler tasks
+"src/ghostpress/prompt.py" = ["ASYNC240"]  # cache I/O is pre-API and short-lived
+"src/ghostpress/build.py" = ["ASYNC240"]   # mkdir before sniff is fine
 
 [tool.pyright]
 include = ["src", "tests"]

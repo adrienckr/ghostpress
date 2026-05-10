@@ -1,11 +1,14 @@
 """``ghostpress`` Typer CLI.
 
-Three commands:
+Five commands:
 
+* ``ghostpress build <url>`` — URL -> CLI in 60 seconds. Sniffs the target
+  and generates a Typer CLI, MCP server, Claude skill, and README in one shot.
 * ``ghostpress sniff <url>`` — one-shot stealth capture, writes har.json +
   manifest.json into ``--out``.
 * ``ghostpress mcp`` — start the MCP server on stdio.
 * ``ghostpress run <flow.yaml>`` — execute a multi-step flow.
+* ``ghostpress gallery`` — list bundled example CLIs.
 """
 
 from __future__ import annotations
@@ -14,12 +17,19 @@ import typer
 
 app = typer.Typer(
     name="ghostpress",
-    help="Stealth-browser sniff daemon for printing-press.",
+    help="URL → CLI in 60 seconds. Stealth-browser sniff + codegen.",
     add_completion=False,
     no_args_is_help=True,
 )
 
-__all__ = ["app", "mcp_command", "run_command", "sniff_command"]
+__all__ = [
+    "app",
+    "build_command",
+    "gallery_command",
+    "mcp_command",
+    "run_command",
+    "sniff_command",
+]
 
 
 @app.command("sniff")
@@ -217,3 +227,102 @@ def run_command(
                 await registry.aclose()
 
     asyncio.run(_execute())
+
+
+@app.command("build")
+def build_command(
+    url_or_prompt: str | None = typer.Argument(None, help="URL to build a CLI for, or omit and use --prompt"),
+    prompt: str | None = typer.Option(None, "--prompt", "-p", help="Natural-language description; ghostpress picks the URL."),
+    out: str = typer.Option("./out", "--out", "-o", help="Output base directory."),
+    duration: float = typer.Option(30.0, "--duration", "-d", help="Sniff window seconds."),
+    name: str | None = typer.Option(None, "--name", "-n", help="CLI name (defaults to URL host slug)."),
+    headed: bool = typer.Option(False, "--headed", help="Visible browser."),
+    proxy: str | None = typer.Option(None, "--proxy"),
+    keep_secrets: bool = typer.Option(False, "--keep-secrets", help="Replay auth headers in the generated CLI."),
+    formats: str = typer.Option("python_cli,mcp_server,claude_skill,readme", "--formats", help="Comma-separated codegen formats."),
+) -> None:
+    """URL → CLI in 60 seconds. The headline command."""
+
+    import asyncio
+
+    from rich.console import Console
+
+    from ghostpress._types import BrowserProfile, BuildOptions, ProxyConfig
+    from ghostpress.build import build
+
+    console = Console(stderr=True)
+
+    target_url = url_or_prompt
+    if prompt:
+        from ghostpress.prompt import suggest
+
+        suggestion = asyncio.run(suggest(prompt))
+        if not suggestion.candidates:
+            console.print("[red]no candidate URLs returned[/red]")
+            raise typer.Exit(1)
+        console.print("[bold]Candidate URLs:[/bold]")
+        for i, c in enumerate(suggestion.candidates, 1):
+            console.print(f"  [{i}] {c.url} — {c.why}")
+        target_url = suggestion.candidates[0].url
+        console.print(f"[dim]using #1: {target_url}[/dim]")
+
+    if not target_url:
+        console.print("[red]must provide URL or --prompt[/red]")
+        raise typer.Exit(1)
+
+    profile = BrowserProfile(headless=not headed, geoip=True)
+    proxy_cfg = ProxyConfig(server=proxy) if proxy else None
+    options = BuildOptions(
+        url=target_url,
+        out_dir=out,
+        name=name,
+        duration_seconds=duration,
+        profile=profile,
+        proxy=proxy_cfg,
+        keep_secrets=keep_secrets,
+        formats=[f.strip() for f in formats.split(",") if f.strip()],
+    )
+
+    try:
+        result = asyncio.run(build(options))
+    except RuntimeError as exc:
+        console.print(f"[red]build failed:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    console.print(
+        f"[green]built[/green] {result.command_count} commands in "
+        f"{result.elapsed_seconds:.1f}s"
+    )
+    console.print(f"  out: {result.out_dir}")
+    for a in result.artifacts:
+        console.print(f"  [dim]→[/dim] {a}")
+    if result.captcha_detected:
+        console.print(f"  [yellow]captcha:[/yellow] {result.captcha_signal}")
+
+
+@app.command("gallery")
+def gallery_command() -> None:
+    """List bundled example CLIs."""
+
+    from pathlib import Path
+
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+    here = Path(__file__).parent.parent.parent / "examples" / "gallery"
+    if not here.exists():
+        console.print("[yellow]no gallery yet[/yellow]")
+        return
+
+    table = Table(title="ghostpress gallery")
+    table.add_column("name")
+    table.add_column("source")
+    table.add_column("commands")
+    for entry in sorted(here.iterdir()):
+        if not entry.is_dir():
+            continue
+        n_cmds = "?"
+        source = "(see README)"
+        table.add_row(entry.name, source, n_cmds)
+    console.print(table)

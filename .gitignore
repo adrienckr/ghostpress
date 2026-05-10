@@ -47,3 +47,6 @@ captures/
 .env
 .env.*
 !.env.example
+
+# Launch drafts (private until launch day)
+launch/

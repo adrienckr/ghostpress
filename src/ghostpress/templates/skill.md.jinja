@@ -1,0 +1,37 @@
+---
+name: {{ spec.name }}
+description: Generated CLI for {{ spec.source_url }}. Use when the user asks for actions on this site.
+---
+
+# {{ spec.name }}
+
+Generated from {{ spec.source_url }} by ghostpress. {{ spec.commands | length }} action{{ '' if spec.commands | length == 1 else 's' }} available.
+
+## Available actions
+
+{% for cmd in spec.commands %}
+### `{{ cmd.name }}` -- {{ cmd.method }} {{ cmd.url_template }}
+
+{{ cmd.description }}
+
+{% if cmd.path_params -%}
+**Path params**: {% for p in cmd.path_params %}`{{ p }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif -%}
+{% if cmd.query_params -%}
+**Query params**: {% for q in cmd.query_params %}`{{ q }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif -%}
+{% if cmd.body_fields -%}
+**Body fields**: {% for f in cmd.body_fields %}`{{ f }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif -%}
+{% if cmd.body_is_raw -%}
+**Body**: raw payload (pass via `body`)
+{% endif %}
+{% endfor %}
+
+## Usage
+
+```
+{{ spec.package_slug }} {{ spec.commands[0].name if spec.commands else 'help' }}
+```
+
+Available as a CLI (`./cli.py`) and an MCP server (`./mcp.py`).

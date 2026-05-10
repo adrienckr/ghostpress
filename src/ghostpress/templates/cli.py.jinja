@@ -1,0 +1,81 @@
+"""{{ spec.name }} — generated standalone CLI."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+import httpx
+import typer
+from rich import print_json
+from rich.console import Console
+
+app = typer.Typer(
+    name="{{ spec.name }}",
+    help="Generated CLI for {{ spec.source_url }}.",
+    no_args_is_help=True,
+    add_completion=False,
+)
+console = Console()
+{% for cmd in spec.commands %}
+
+@app.command("{{ cmd.name }}", help={{ cmd.description | tojson }})
+def {{ cmd.name | replace('-', '_') }}_cmd(
+    {%- for p in cmd.path_params %}
+    {{ p | replace('-', '_') }}: str = typer.Argument(..., help="path param: {{ p }}"),
+    {%- endfor %}
+    {%- for q, default in cmd.query_params.items() %}
+    {{ q | replace('-', '_') }}: Optional[str] = typer.Option({{ default | tojson }}, "--{{ q }}", help="query: {{ q }}"),
+    {%- endfor %}
+    {%- if not cmd.body_is_raw %}
+    {%- for f, default in cmd.body_fields.items() %}
+    {{ f | replace('-', '_') }}: Optional[str] = typer.Option({{ default | tojson }}, "--{{ f }}", help="body field: {{ f }}"),
+    {%- endfor %}
+    {%- endif %}
+    {%- if cmd.body_is_raw %}
+    body: Optional[str] = typer.Option(None, "--body", help="raw request body; use @path to read from a file"),
+    {%- endif %}
+    raw: bool = typer.Option(False, "--raw", help="print raw response body"),
+    timeout: float = typer.Option(30.0, "--timeout", help="HTTP timeout in seconds"),
+) -> None:
+    url = {{ cmd.url_template | tojson }}
+    {%- for p in cmd.path_params %}
+    url = url.replace("{" + {{ p | tojson }} + "}", {{ p | replace('-', '_') }})
+    {%- endfor %}
+    headers = {{ cmd.headers | tojson }}
+    params: dict[str, str] = {}
+    {%- for q in cmd.query_params %}
+    if {{ q | replace('-', '_') }} is not None:
+        params[{{ q | tojson }}] = {{ q | replace('-', '_') }}
+    {%- endfor %}
+    request_kwargs: dict = {"params": params, "headers": headers}
+    {%- if cmd.body_is_raw %}
+    if body is not None:
+        if body.startswith("@"):
+            with open(body[1:], "rb") as fh:
+                request_kwargs["content"] = fh.read()
+        else:
+            request_kwargs["content"] = body
+    {%- elif cmd.body_fields %}
+    body_payload: dict[str, str] = {}
+    {%- for f in cmd.body_fields %}
+    if {{ f | replace('-', '_') }} is not None:
+        body_payload[{{ f | tojson }}] = {{ f | replace('-', '_') }}
+    {%- endfor %}
+    if body_payload:
+        request_kwargs["json"] = body_payload
+    {%- endif %}
+    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+        response = client.request({{ cmd.method | tojson }}, url, **request_kwargs)
+    if raw:
+        typer.echo(response.text)
+    else:
+        try:
+            print_json(response.text)
+        except Exception:
+            typer.echo(response.text)
+    if not response.is_success:
+        raise typer.Exit(1)
+{% endfor %}
+
+if __name__ == "__main__":
+    app()
